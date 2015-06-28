@@ -1,10 +1,13 @@
 // populate a single Coder's profile 
 var Coder = require('../models/coder');
 var Coders = require('../collections/coders');
+var Language = require('../models/language');
+var Languages = require('../collections/languages');
+
 var rp = require('request-promise');
 var bb = require('bluebird');
 var _ = require('underscore');
-var token = '13fc5a0dd4aca2fc61cc2f6b337c8ce3ada475d3';// add one of our tokens 
+var token = 'd30257ae0090811432ece3d7565ba088edb74d7b';// add one of our tokens 
                                                        // do not push this file with token
                                                        // to GitHub!
 module.exports = api = {
@@ -34,7 +37,6 @@ module.exports = api = {
     // returns user object
   },
   getRepos: function(user) {
-    console.log(user);
     this.options.url  = user.repos_url;
     return rp(this.options);
     //returns array of repo objects
@@ -95,22 +97,53 @@ module.exports = api = {
   saveToCodersTable: function(username, scores) {
     var coder =  new Coder({
       login: username,
-      stargazers_count: scores.stargazers_count,
-      watchers_count: scores.watchers_count,
-      forks: scores.forks
+      stargazers_count: scores.cred.stargazers_count,
+      watchers_count: scores.cred.watchers_count,
+      forks: scores.cred.forks
     })
     return coder.save()
       .then(function(coder) {
         Coders.add(coder)
-        console.log('new coder added to db');
+        // console.log('new coder added to db', coder);
         return coder;
       })
   },
   saveToLanguagesTable: function(languages) {
     //takes in object of languages
     // loop through languages
-    // if language not in database
-    // add to database
+    _.each(languages, function(bytes, language) { //add way to add bytes to join table
+      var languageInst = new Language({
+        name: language
+      })
+      languageInst.fetch()
+        .then(function(langModel) {
+        // if language not in database
+          if (!langModel) {
+            return languageInst.save()
+              .then(function(language) {
+                // add to database
+                Languages.add(language);
+                console.log('new language to db', language);
+                return language;
+              })
+          } 
+        })
+    })
+  },
+  savetoCodersLanguagesTable: function(username, languages) {
+    new Coder({coder: username}).fetch()
+    .then(function(coder) {
+      if(coder) {
+        _.each(languages, function(bytes, language) { //add way to add bytes to join table
+          //update coder languages.  be careful to not keep appending languages to the list.
+          var languageInst = new Language({
+            coder_id: coder.get('id');
+            //finish code
+          })
+          
+      }
+    })
+
   }
   // getScoresAddCoderToDb: function(username) {
   //   return this.getUser(username).promise().bind(this)
