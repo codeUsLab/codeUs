@@ -22,7 +22,7 @@ var Languages = require('../app/collections/languages');
 var CoderLanguage = require('../app/models/coderlanguage');
 var CodersLanguages = require('../app/collections/coderslanguages');
 
-var token = 'b14be7134eb201df873357220c2b48ce299d1fd8'; // do not upload to GitHub with this token assigned explicitly!
+var token = 'd37c94450a7ace1e305d896aa7c5b248fbe355d6'; // do not upload to GitHub with this token assigned explicitly!
 
 var stackOptions = {
 	url: 'https://api.stackexchange.com/2.2/users?key=TKQV9fx1oXQhozGO*SGQNA((&access_token=saN8CDoS7M8lbHLZj(mC2w))&pagesize=100&order=desc&sort=reputation&site=stackoverflow&filter=!Ln4IB)_.hsRjrBGzKe*i*W&page=',
@@ -199,5 +199,20 @@ module.exports = function (app) {
 		};
 		addSO(1);
 	});
-	
+
+
+	app.get('/related', authController.ensureAuthenticated, function(req, res, next) {
+		var username = req.user.username;
+		var locale = req.user._json.location;
+		var primaryLang;
+		new Coder({login: username}).fetch()
+		.then(function(coder) {
+			primaryLang = coder.attributes.primary_lang;
+			coder.query({where: {location: locale}, andWhere: {primary_lang: primaryLang}}).fetchAll()
+			.then(function(collection) {
+			res.status(200).send(collection);
+		})	
+		});
+	});
+
 };
